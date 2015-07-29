@@ -8,7 +8,7 @@ import java.net.HttpURLConnection;
 
 /**
  * The main class that parses the command line and communicates with the
- * Phone Bill server using REST. Tyler McKean
+ * Phone Bill server using REST.
  */
 public class Project4 {
 
