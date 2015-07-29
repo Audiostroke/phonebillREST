@@ -19,7 +19,6 @@ public class Project4 {
         String portString = null;
         String key = null;
         String value = null;
-        String string = null;
 
         for (String arg : args) {
             if (hostName == null) {
