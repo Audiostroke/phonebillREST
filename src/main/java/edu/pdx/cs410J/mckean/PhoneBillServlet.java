@@ -6,7 +6,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,7 +20,8 @@ import java.util.Map;
  */
 public class PhoneBillServlet extends HttpServlet
 {
-    private final Map<String, String> data = new HashMap<>();
+    private final Map<String, PhoneBill> data = new HashMap<>();
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm a");
 
     /**
      * Handles an HTTP GET request from a client by writing the value of the key
@@ -29,11 +34,19 @@ public class PhoneBillServlet extends HttpServlet
     {
         response.setContentType( "text/plain" );
 
-        String key = getParameter( "key", request );
-        if (key != null) {
-            writeValue(key, response);
+        String customer = getParameter( "customer", request );
+        String startTime = getParameter("startTime", request);
+        String endTime = getParameter("endTime", request);
+        if (customer != null) {
+            if(startTime != null && endTime != null) {
+                writeSearchBill(customer, response, startTime, endTime);
+            }
+            else {
+                writeValue(customer, response);
+            }
 
-        } else {
+        }
+        else {
             writeAllMappings(response);
         }
     }
@@ -46,24 +59,45 @@ public class PhoneBillServlet extends HttpServlet
     @Override
     protected void doPost( HttpServletRequest request, HttpServletResponse response ) throws ServletException, IOException
     {
-        response.setContentType( "text/plain" );
+        response.setContentType("text/plain");
 
-        String key = getParameter( "key", request );
-        if (key == null) {
-            missingRequiredParameter( response, "key" );
+        String customer = getParameter( "customer", request );
+        if (customer == null) {
+            missingRequiredParameter(response, "customer" );
+            return;
+        }
+        String caller = getParameter("caller", request);
+        if(caller == null ) {
+            missingRequiredParameter(response, "caller" );
+            return;
+        }
+        String callee = getParameter("callee", request);
+        if(callee == null ) {
+            missingRequiredParameter(response, "callee" );
+            return;
+        }
+        String startTime = getParameter("startTime", request);
+        if(startTime == null ) {
+            missingRequiredParameter(response, "startTime" );
+            return;
+        }
+        String endTime = getParameter("endTime", request);
+        if(endTime == null ) {
+            missingRequiredParameter(response, "endTime" );
             return;
         }
 
-        String value = getParameter( "value", request );
-        if ( value == null) {
-            missingRequiredParameter( response, "value" );
-            return;
+        PhoneCall newCall = new PhoneCall(caller, callee, startTime, endTime);
+        PhoneBill newBill = data.get(customer);
+        if(newBill != null) {
+            newBill.addPhoneCall(newCall);
         }
-
-        this.data.put(key, value);
+        else {
+            data.put(customer, new PhoneBill(customer));
+            data.get(customer).addPhoneCall(newCall);
+        }
 
         PrintWriter pw = response.getWriter();
-        pw.println(Messages.mappedKeyValue(key, value));
         pw.flush();
 
         response.setStatus( HttpServletResponse.SC_OK);
@@ -88,33 +122,52 @@ public class PhoneBillServlet extends HttpServlet
      * Writes the value of the given key to the HTTP response.
      *
      * The text of the message is formatted with {@link Messages#getMappingCount(int)}
-     * and {@link Messages#formatKeyValuePair(String, String)}
+     * and
      */
-    private void writeValue( String key, HttpServletResponse response ) throws IOException
+    private void writeValue(String customer, HttpServletResponse response ) throws IOException
     {
-        String value = this.data.get(key);
+        PhoneBill newBill = this.data.get(customer);
 
-        PrintWriter pw = response.getWriter();
-        pw.println(Messages.getMappingCount( value != null ? 1 : 0 ));
-        pw.println(Messages.formatKeyValuePair( key, value ));
-
-        pw.flush();
+        PrettyPrinter printer = new PrettyPrinter(response);
+        printer.dumptoserver(newBill);
 
         response.setStatus( HttpServletResponse.SC_OK );
+    }
+
+    private void writeSearchBill(String customer, HttpServletResponse response, String startTime, String endTime) throws IOException
+    {
+        System.out.println(customer);
+        PhoneBill newBill = this.data.get(customer);
+        List<PhoneCall> temp = (List<PhoneCall>) newBill.getPhoneCalls();
+        PhoneBill newerBill = new PhoneBill(customer);
+        try {
+            Date Start = dateFormat.parse(startTime);
+            Date End = dateFormat.parse(endTime);
+            for(PhoneCall call : temp) {
+                if(call.getStartTime().after(Start) && call.getEndTime().before(End)) {
+                    newerBill.addPhoneCall(call);
+                }
+            }
+            PrettyPrinter printer = new PrettyPrinter(response);
+            printer.dumptoserver(newerBill);
+            response.setStatus(HttpServletResponse.SC_OK);
+        } catch (ParseException e) {
+            System.out.println("Parse exception when formatting date");
+        }
     }
 
     /**
      * Writes all of the key/value pairs to the HTTP response.
      *
      * The text of the message is formatted with
-     * {@link Messages#formatKeyValuePair(String, String)}
+     * {@link Messages#formatKeyValuePair(String, PhoneBill)}
      */
     private void writeAllMappings( HttpServletResponse response ) throws IOException
     {
         PrintWriter pw = response.getWriter();
-        pw.println(Messages.getMappingCount( data.size() ));
+        pw.println(Messages.getMappingCount(data.size() ));
 
-        for (Map.Entry<String, String> entry : this.data.entrySet()) {
+        for (Map.Entry<String, PhoneBill> entry : this.data.entrySet()) {
             pw.println(Messages.formatKeyValuePair(entry.getKey(), entry.getValue()));
         }
 

@@ -11,7 +11,7 @@ public class Messages
         return String.format( "Server contains %d key/value pairs", count );
     }
 
-    public static String formatKeyValuePair( String key, String value )
+    public static String formatKeyValuePair( String key, PhoneBill value )
     {
         return String.format("  %s -> %s", key, value);
     }

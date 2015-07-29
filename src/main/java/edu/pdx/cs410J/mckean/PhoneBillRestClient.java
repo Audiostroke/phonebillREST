@@ -22,9 +22,14 @@ public class PhoneBillRestClient extends HttpRequestHelper
      * @param hostName The name of the host
      * @param port The port
      */
-    public PhoneBillRestClient( String hostName, int port )
+    public PhoneBillRestClient( String hostName, int port)
     {
-        this.url = String.format( "http://%s:%d/%s/%s", hostName, port, WEB_APP, SERVLET );
+        this.url = String.format( "http://%s:%d/%s/%s", hostName, port, WEB_APP, SERVLET);
+    }
+
+    public PhoneBillRestClient(String hostName, int port, String customer, String startTime, String endTime) {
+
+        this.url = String.format("http://%s:%d/%s%s?customer=%s&startTime=%s&endTime=%s", hostName, port, WEB_APP, SERVLET, customer, startTime, endTime);
     }
 
     /**
@@ -38,13 +43,23 @@ public class PhoneBillRestClient extends HttpRequestHelper
     /**
      * Returns all values for the given key
      */
-    public Response getValues( String key ) throws IOException
+    public Response getValues( String customer) throws IOException
     {
-        return get(this.url, "key", key);
+        return get(this.url, "customer", customer);
     }
 
-    public Response addKeyValuePair( String key, String value ) throws IOException
+    public Response getSearch(String customer, String startTime, String endTime) throws IOException {
+        return get(this.url, "customer", customer, "startTime", startTime, "endTime", endTime);
+    }
+    public Response addCall(String customername, PhoneCall call) throws IOException
     {
-        return post( this.url, "key", key, "value", value );
+        String customer = customername;
+        String caller = call.getCaller();
+        String callee = call.getCallee();
+        String startTime = call.getStartTimeString();
+        String endTime = call.getEndTimeString();
+
+
+        return post( this.url, "customer", customer, "caller", caller, "callee", callee, "startTime", startTime, "endTime", endTime);
     }
 }
