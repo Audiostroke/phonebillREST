@@ -6,6 +6,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -140,11 +141,16 @@ public class PhoneBillServlet extends HttpServlet
         PhoneBill newBill = this.data.get(customer);
         List<PhoneCall> temp = (List<PhoneCall>) newBill.getPhoneCalls();
         PhoneBill newerBill = new PhoneBill(customer);
+
         try {
             Date Start = dateFormat.parse(startTime);
+            String Start1 = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(Start);
             Date End = dateFormat.parse(endTime);
+            String End1 = DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(End);
+            Date Start2 = dateFormat.parse(Start1);
+            Date End2 = dateFormat.parse(End1);
             for(PhoneCall call : temp) {
-                if(call.getStartTime().after(Start) && call.getEndTime().before(End)) {
+                if(call.getStartTime().after(Start2) && call.getEndTime().before(End2)) {
                     newerBill.addPhoneCall(call);
                 }
             }
